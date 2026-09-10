@@ -11,6 +11,11 @@ import { useToast } from "@/components/toast";
 import { STAGES, STAGE_META, type FunnelStage, type Prospect } from "@/types/crm";
 
 type PipelineView = "table" | "board";
+type ContactFilter = "all" | "email" | "phone";
+
+function hasContactValue(value: string | null) {
+  return Boolean(value?.trim());
+}
 
 export function PipelineWorkspace({
   prospects,
@@ -36,6 +41,7 @@ export function PipelineWorkspace({
 
   const [segment, setSegment] = useState("all");
   const [region, setRegion] = useState("all");
+  const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
   const [query, setQuery] = useState("");
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(
     initialProspectId ? prospects.find((p) => p.id === initialProspectId) ?? null : null,
@@ -49,7 +55,7 @@ export function PipelineWorkspace({
   const segments = useMemo(() => [...new Set(localProspects.map((p) => p.segment))].sort(), [localProspects]);
   const regions = useMemo(() => [...new Set(localProspects.map((p) => p.region))].sort(), [localProspects]);
 
-  const filteredProspects = useMemo(() => {
+  const prospectsMatchingBaseFilters = useMemo(() => {
     const search = query.trim().toLocaleLowerCase("pt");
     return localProspects.filter((prospect) => {
       const searchable = [prospect.business_name, prospect.city, prospect.email, prospect.phone, prospect.website, prospect.notes]
@@ -64,6 +70,25 @@ export function PipelineWorkspace({
       );
     });
   }, [localProspects, query, region, segment, stage]);
+
+  const contactCounts = useMemo(
+    () => ({
+      all: prospectsMatchingBaseFilters.length,
+      email: prospectsMatchingBaseFilters.filter((prospect) => hasContactValue(prospect.email)).length,
+      phone: prospectsMatchingBaseFilters.filter((prospect) => hasContactValue(prospect.phone)).length,
+    }),
+    [prospectsMatchingBaseFilters],
+  );
+
+  const filteredProspects = useMemo(() => {
+    if (contactFilter === "email") {
+      return prospectsMatchingBaseFilters.filter((prospect) => hasContactValue(prospect.email));
+    }
+    if (contactFilter === "phone") {
+      return prospectsMatchingBaseFilters.filter((prospect) => hasContactValue(prospect.phone));
+    }
+    return prospectsMatchingBaseFilters;
+  }, [contactFilter, prospectsMatchingBaseFilters]);
 
   function toggleSelected(id: string, checked: boolean) {
     setSelectedIds((current) => {
@@ -192,6 +217,7 @@ export function PipelineWorkspace({
               setStage("all");
               setSegment("all");
               setRegion("all");
+              setContactFilter("all");
               setQuery("");
             }}
             className="h-10 rounded-lg px-3 text-sm font-medium text-neutral-600 hover:bg-neutral-100"
@@ -209,6 +235,27 @@ export function PipelineWorkspace({
             <PlusIcon className="size-4" />
             Novo prospect
           </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:col-span-2 xl:col-span-4">
+          <span className="mr-1 text-xs font-medium text-muted">Contacto:</span>
+          <ContactFilterButton
+            label="Todos"
+            count={contactCounts.all}
+            active={contactFilter === "all"}
+            onClick={() => setContactFilter("all")}
+          />
+          <ContactFilterButton
+            label="Com email"
+            count={contactCounts.email}
+            active={contactFilter === "email"}
+            onClick={() => setContactFilter(contactFilter === "email" ? "all" : "email")}
+          />
+          <ContactFilterButton
+            label="Com telemóvel"
+            count={contactCounts.phone}
+            active={contactFilter === "phone"}
+            onClick={() => setContactFilter(contactFilter === "phone" ? "all" : "phone")}
+          />
         </div>
       </div>
 
@@ -326,6 +373,40 @@ export function PipelineWorkspace({
         />
       )}
     </>
+  );
+}
+
+function ContactFilterButton({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 ${
+        active
+          ? "border-accent bg-accent text-accent-foreground"
+          : "border-border bg-white text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50"
+      }`}
+    >
+      {label}
+      <span
+        className={`inline-flex min-w-5 justify-center rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
+          active ? "bg-white/20 text-accent-foreground" : "bg-neutral-100 text-neutral-600"
+        }`}
+      >
+        {count}
+      </span>
+    </button>
   );
 }
 
