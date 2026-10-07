@@ -4,6 +4,7 @@
 export const STAGES = [
   "Prospect",
   "Contacted",
+  "Called",
   "Engaged",
   "Meeting",
   "Proposal",
@@ -19,6 +20,7 @@ export type FunnelStage = (typeof STAGES)[number];
 export const ACTIVE_STAGES: FunnelStage[] = [
   "Prospect",
   "Contacted",
+  "Called",
   "Engaged",
   "Meeting",
   "Proposal",
@@ -79,6 +81,15 @@ export const STAGE_META: Record<
     hover: "hover:border-amber-200 hover:bg-amber-50/70",
     column: "border-amber-200 bg-amber-50/40",
     nextAction: "Fazer follow-up",
+  },
+  Called: {
+    label: "Chamada Efetuada",
+    dot: "bg-orange-500",
+    badge: "bg-orange-50 text-orange-800 ring-orange-600/20",
+    active: "border-orange-300 bg-orange-50 text-orange-950 ring-orange-500/15",
+    hover: "hover:border-orange-200 hover:bg-orange-50/70",
+    column: "border-orange-200 bg-orange-50/40",
+    nextAction: "Registar resultado da chamada",
   },
   Engaged: {
     label: "Interessado",
